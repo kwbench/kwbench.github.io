@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KWBench — Model Insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --c-bg: #FAF8F4;
+  --c-bg-warm: #F3F0E8;
+  --c-bg-code: #ECEADE;
+  --c-surface: #FFFFFF;
+  --c-border: #D8D4C8;
+  --c-border-light: #E8E4DA;
+  --c-text: #1A1814;
+  --c-text-secondary: #5C584E;
+  --c-text-tertiary: #8A867C;
+  --c-accent: #B44A2D;
+  --c-accent-bg: rgba(180,74,45,0.06);
+  --c-gate-red: #B44A2D;
+  --c-gate-amber: #C08520;
+  --c-gate-green: #3D7A4A;
+  --c-bar-track: #E8E4DA;
+  --c-bar-fill: #1A1814;
+  --c-highlight: rgba(180,74,45,0.08);
+  --c-opus: #B44A2D;
+  --c-gpt: #1A6B3C;
+  --c-both: #5C584E;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  --w: 760px;
+}
+
+[data-theme="dark"] {
+  --c-bg: #141210;
+  --c-bg-warm: #1C1A16;
+  --c-bg-code: #1E1C18;
+  --c-surface: #201E1A;
+  --c-border: #383428;
+  --c-border-light: #2C2A22;
+  --c-text: #E8E4DA;
+  --c-text-secondary: #A8A498;
+  --c-text-tertiary: #706C62;
+  --c-accent: #E07050;
+  --c-accent-bg: rgba(224,112,80,0.08);
+  --c-gate-red: #E07050;
+  --c-gate-amber: #D4A030;
+  --c-gate-green: #5CA86A;
+  --c-bar-track: #2C2A22;
+  --c-bar-fill: #E8E4DA;
+  --c-highlight: rgba(224,112,80,0.06);
+  --c-opus: #E07050;
+  --c-gpt: #5CA86A;
+  --c-both: #A8A498;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.72;
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+::selection { background: var(--c-accent); color: #fff; }
+
+.container { max-width: var(--w); margin: 0 auto; padding: 0 28px; }
+
+/* ── Topbar ── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 14px 28px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--c-bg);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s, background 0.3s, backdrop-filter 0.3s;
+}
+.topbar.scrolled {
+  border-bottom-color: var(--c-border-light);
+  background: color-mix(in srgb, var(--c-bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+}
+.topbar-logo {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 600;
+  color: var(--c-text); text-decoration: none;
+}
+.topbar-back {
+  font-size: 0.85rem; color: var(--c-text-tertiary);
+  text-decoration: none;
+}
+.topbar-back:hover { color: var(--c-accent); }
+.theme-toggle {
+  appearance: none; border: none;
+  background: var(--c-bg-warm);
+  border-radius: 20px; padding: 5px 13px;
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
+  color: var(--c-text-secondary); cursor: pointer;
+  transition: background 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.theme-toggle:hover { background: var(--c-border-light); color: var(--c-text); }
+.theme-toggle svg { width: 13px; height: 13px; fill: currentColor; }
+
+/* ── Typography ── */
+h1, h2, h3 { font-family: var(--font-display); color: var(--c-text); letter-spacing: -0.02em; }
+h1 { font-size: clamp(2rem, 4vw, 2.6rem); font-weight: 700; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.03em; }
+h1 .kw { font-style: italic; color: var(--c-accent); }
+h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--c-border); }
+h3 { font-size: 1.1rem; font-weight: 600; margin: 32px 0 12px; }
+p { color: var(--c-text-secondary); margin-bottom: 16px; }
+p strong, li strong { color: var(--c-text); font-weight: 600; }
+a { color: var(--c-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--c-accent) 30%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--c-accent); }
+ul { padding-left: 22px; margin-bottom: 16px; }
+li { color: var(--c-text-secondary); margin-bottom: 8px; }
+li::marker { color: var(--c-text-tertiary); }
+
+/* ── Hero ── */
+.hero { padding: 110px 0 40px; }
+.hero .lead { font-size: 1.08rem; line-height: 1.72; color: var(--c-text-secondary); max-width: 640px; }
+
+/* ── Section ── */
+section { padding: 48px 0; }
+section + section { border-top: 1px solid var(--c-border-light); }
+
+/* ── Stat row ── */
+.stat-row {
+  display: flex; gap: 0; margin: 24px 0;
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; overflow: hidden;
+  background: var(--c-surface);
+}
+.stat-row .s {
+  flex: 1; padding: 20px 18px;
+  border-right: 1px solid var(--c-border-light);
+  text-align: center;
+}
+.stat-row .s:last-child { border-right: none; }
+.stat-row .s-val {
+  font-family: var(--font-display);
+  font-size: 1.6rem; font-weight: 700;
+  color: var(--c-text); line-height: 1;
+}
+.stat-row .s-label {
+  font-size: 0.76rem; color: var(--c-text-tertiary);
+  margin-top: 5px;
+}
+
+/* ── Venn-like overlap viz ── */
+.overlap-bar {
+  display: flex; margin: 24px 0; height: 40px;
+  border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--c-border-light);
+  font-size: 0.78rem; font-weight: 600; color: #fff;
+}
+.overlap-bar > div {
+  display: flex; align-items: center; justify-content: center;
+  white-space: nowrap; padding: 0 8px;
+}
+
+/* ── Table ── */
+.data-table-wrap {
+  margin: 20px 0;
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; overflow: hidden;
+  background: var(--c-surface);
+}
+.data-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.88rem; font-variant-numeric: tabular-nums;
+}
+.data-table thead th {
+  text-align: left; padding: 12px 16px;
+  font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--c-text-tertiary);
+  background: var(--c-bg-warm);
+  border-bottom: 1px solid var(--c-border-light);
+}
+.data-table thead th.r { text-align: right; }
+.data-table tbody tr { border-bottom: 1px solid var(--c-border-light); }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--c-highlight); }
+.data-table td { padding: 10px 16px; }
+.data-table td.r { text-align: right; font-family: var(--font-mono); font-size: 0.85rem; }
+.data-table td.model { font-weight: 600; }
+
+/* ── Callout ── */
+.callout {
+  background: var(--c-accent-bg);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 15%, transparent);
+  border-radius: 8px; padding: 22px 24px; margin: 24px 0;
+}
+.callout p { color: var(--c-text-secondary); }
+.callout p:last-child { margin-bottom: 0; }
+
+/* ── Pull quote ── */
+.pull-quote {
+  font-family: var(--font-display);
+  font-size: 1.15rem; font-weight: 400; font-style: italic;
+  line-height: 1.6; color: var(--c-text);
+  padding: 18px 0 18px 22px; margin: 24px 0;
+  border-left: 3px solid var(--c-accent);
+}
+
+/* ── Difficulty dist ── */
+.diff-bar-wrap { margin: 20px 0; }
+.diff-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 6px; font-size: 0.85rem;
+}
+.diff-label {
+  width: 120px; text-align: right;
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--c-text-tertiary); flex-shrink: 0;
+}
+.diff-bar {
+  height: 22px; background: var(--c-bar-fill);
+  border-radius: 3px; opacity: 0.75;
+  display: flex; align-items: center; padding: 0 8px;
+  font-family: var(--font-mono); font-size: 0.75rem;
+  color: var(--c-bg); font-weight: 500;
+  min-width: 28px;
+}
+
+/* ── Coverage viz ── */
+.cover-viz { margin: 28px 0; }
+.cover-step {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 8px;
+}
+.cover-label {
+  width: 140px; text-align: right; flex-shrink: 0;
+  font-size: 0.82rem; font-weight: 600;
+  color: var(--c-text);
+}
+.cover-label .cover-added {
+  font-weight: 400; color: var(--c-text-tertiary);
+  font-size: 0.78rem;
+}
+.cover-track {
+  flex: 1; height: 28px;
+  background: var(--c-bar-track);
+  border-radius: 4px; overflow: hidden;
+  display: flex;
+}
+.cover-fill {
+  height: 100%;
+  flex-shrink: 0;
+}
+.cover-pct {
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--c-text-tertiary); width: 40px;
+  flex-shrink: 0;
+}
+
+/* ── Footer ── */
+footer {
+  padding: 44px 0; border-top: 1px solid var(--c-border-light);
+  text-align: center; font-size: 0.86rem; color: var(--c-text-tertiary);
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  body { font-size: 16px; }
+  .hero { padding: 100px 0 36px; }
+  .stat-row { flex-wrap: wrap; }
+  .stat-row .s { flex: 1 1 50%; }
+  .data-table { font-size: 0.82rem; }
+  .data-table td, .data-table th { padding: 8px 12px; }
+}
+
+/* ── Reveal ── */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.45s ease, transform 0.45s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav class="topbar" id="topbar">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="index.html" class="topbar-logo">KWBench</a>
+    <a href="index.html" class="topbar-back">Back to leaderboard</a>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <svg id="themeIcon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+    <span id="themeLabel">Dark</span>
+  </button>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <h1>Models Solve <span class="kw">Different</span> Tasks</h1>
+    <p class="lead">Insights from the <a href="index.html" style="color:inherit; text-decoration:underline;">KWBench</a> benchmark. The top two models&thinsp;&mdash;&thinsp;Claude Opus 4.6 and GPT-5.4&thinsp;&mdash;&thinsp;agree on fewer than a third of the tasks they pass. Different architectures, different training, different blind spots. Domain expertise is inherently topographical and as we're discovering, every model maps a different terrain.</p>
+  </div>
+</header>
+
+<main>
+<div class="container">
+
+  <section class="reveal">
+    <h2>Opus 4.6 vs GPT-5.4</h2>
+
+    <p>Both models are the best from their respective labs. Their aggregate scores are 22.6% and 17.7%. You'd expect the stronger model to be a superset of the weaker one&thinsp;&mdash;&thinsp;solving everything GPT solves, plus more. That's not what happens.</p>
+
+    <div class="stat-row">
+      <div class="s"><div class="s-val">61</div><div class="s-label">Opus passes</div></div>
+      <div class="s"><div class="s-val">47</div><div class="s-label">GPT passes</div></div>
+      <div class="s"><div class="s-val">26</div><div class="s-label">both pass</div></div>
+      <div class="s"><div class="s-val">31.7%</div><div class="s-label">Jaccard overlap</div></div>
+    </div>
+
+    <div class="overlap-bar">
+      <div style="flex:35; background:var(--c-opus);">35 Opus only</div>
+      <div style="flex:26; background:var(--c-both);">26 both</div>
+      <div style="flex:21; background:var(--c-gpt);">21 GPT only</div>
+    </div>
+
+    <p>35 tasks that Opus solves and GPT doesn't. 21 tasks that GPT solves and Opus doesn't. On the 26 tasks they both pass, their quality is virtually identical&thinsp;&mdash;&thinsp;Opus averages 0.816 and GPT averages 0.819. They're equally good when they both see the insight. They just see different insights.</p>
+
+    <p>There is no longer the scenario about one model being "better." It's two different patterns of domain recognition, with only a third of their successes overlapping. GPT-5.4 passes 21 tasks that the overall top-scoring model misses entirely.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>No Model Is a Superset</h2>
+
+    <p>Across the top 8 models, 113 of 223 tasks are passed by at least one model. But the overlap is remarkably thin.</p>
+
+    <div class="stat-row">
+      <div class="s"><div class="s-val">113</div><div class="s-label">tasks any model passes</div></div>
+      <div class="s"><div class="s-val">44</div><div class="s-label">passed by exactly 1</div></div>
+      <div class="s"><div class="s-val">2</div><div class="s-label">passed by all 8</div></div>
+      <div class="s"><div class="s-val">110</div><div class="s-label">passed by none</div></div>
+    </div>
+
+    <p><strong>44 tasks are solved by exactly one model.</strong> Not by the best model, or the biggest model&thinsp;&mdash;&thinsp;by a specific model that happened to have the right reasoning pattern for that specific problem. Opus uniquely solves 14 of those. GPT uniquely solves 10. Gemini 3.1 Pro uniquely solves 7. Even Kimi K2.5 and MiniMax M2.7 each uniquely contribute tasks no other model passes.</p>
+
+    <h3>Task difficulty distribution</h3>
+
+    <p>How many of the 8 models pass each task:</p>
+
+    <div class="diff-bar-wrap">
+      <div class="diff-row"><div class="diff-label">1 model</div><div class="diff-bar" style="width: calc(44 / 44 * 100%);">44</div></div>
+      <div class="diff-row"><div class="diff-label">2 models</div><div class="diff-bar" style="width: calc(22 / 44 * 100%);">22</div></div>
+      <div class="diff-row"><div class="diff-label">3 models</div><div class="diff-bar" style="width: calc(13 / 44 * 100%);">13</div></div>
+      <div class="diff-row"><div class="diff-label">4 models</div><div class="diff-bar" style="width: calc(7 / 44 * 100%);">7</div></div>
+      <div class="diff-row"><div class="diff-label">5 models</div><div class="diff-bar" style="width: calc(12 / 44 * 100%);">12</div></div>
+      <div class="diff-row"><div class="diff-label">6 models</div><div class="diff-bar" style="width: calc(8 / 44 * 100%);">8</div></div>
+      <div class="diff-row"><div class="diff-label">7 models</div><div class="diff-bar" style="width: calc(5 / 44 * 100%);">5</div></div>
+      <div class="diff-row"><div class="diff-label">All 8</div><div class="diff-bar" style="width: calc(2 / 44 * 100%);">2</div></div>
+    </div>
+
+    <p>The distribution is bottom-heavy. The most common outcome is that a task is solved by exactly one model. Full consensus&thinsp;&mdash;&thinsp;all 8 models agreeing a task is solvable&thinsp;&mdash;&thinsp;happens twice out of 113.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Covering the Benchmark</h2>
+
+    <p>If you wanted to maximize the number of tasks passed, how many models would you need? Start with the best, then greedily add whichever model covers the most remaining tasks:</p>
+
+    <div class="cover-viz">
+      <div class="cover-step">
+        <div class="cover-label">Opus 4.6 <div class="cover-added">+61</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:54%; background:var(--c-accent);"></div></div>
+        <div class="cover-pct">54%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ GPT-5.4 <div class="cover-added">+21</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:54%; background:var(--c-text);"></div><div class="cover-fill" style="width:19%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">73%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ Gemini 3.1 Pro <div class="cover-added">+13</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:73%; background:var(--c-text);"></div><div class="cover-fill" style="width:11%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">84%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ Kimi K2.5 <div class="cover-added">+8</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:84%; background:var(--c-text);"></div><div class="cover-fill" style="width:7%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">91%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ GLM-5 Turbo <div class="cover-added">+4</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:91%; background:var(--c-text);"></div><div class="cover-fill" style="width:4%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">95%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ Qwen 3.5 Plus <div class="cover-added">+2</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:95%; background:var(--c-text);"></div><div class="cover-fill" style="width:1.5%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">96%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ MiniMax M2.7 <div class="cover-added">+2</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:96.5%; background:var(--c-text);"></div><div class="cover-fill" style="width:1.5%; background:var(--c-accent); border-radius:0;"></div></div>
+        <div class="cover-pct">98%</div>
+      </div>
+      <div class="cover-step">
+        <div class="cover-label">+ Gemini 3 Flash <div class="cover-added">+2</div></div>
+        <div class="cover-track"><div class="cover-fill" style="width:98%; background:var(--c-text);"></div><div class="cover-fill" style="width:2%; background:var(--c-accent); border-radius:0 4px 4px 0;"></div></div>
+        <div class="cover-pct">100%</div>
+      </div>
+    </div>
+
+    <p>The best single model covers just over half. You need three to get to 84%. You need <em>all eight</em> to reach 100%&thinsp;&mdash;&thinsp;every model in the stack contributes tasks that no other model solves.</p>
+
+    <p style="font-size:0.88rem; color:var(--c-text-tertiary);">Across all 17 models tested, 116 of 223 tasks are passed by at least one model. The remaining 9 models beyond the top 8 add just 3 more tasks. 107 tasks remain unsolved.</p>
+
+    <div class="callout">
+      <p><strong>This is the practical implication.</strong> If you're building a system that needs reliable domain expertise across diverse problems, no single model covers the space. The models aren't converging on the same capability. They're developing different, partially overlapping competencies. Ensembling or routing between models is more than a mere performance trick. Because each model recognizes patterns the others are blind to.<sup style="font-size:0.7em; color:var(--c-accent);">1</sup></p>
+    </div>
+
+    <p style="font-size:0.82rem; color:var(--c-text-tertiary); margin-top:16px; padding-left:1em; border-left:2px solid var(--c-border-light);"><sup>1</sup>&thinsp;I see the same pattern in my own work on <em>nanoevolve</em>&thinsp;&mdash;&thinsp;using evolutionary optimization to optimize the optimizer in nanochat. Progress is remarkably slow when using only GPT-5.4 or only Opus 4.6; each model misses things the other catches. Real momentum comes from having one generate and the other review.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>What Remains Unsolved</h2>
+
+    <p>110 of 223 tasks are not passed by any of the top 8 models. These aren't edge cases or trick questions or gotchas. They span the same domains as the solvable tasks&thinsp;&mdash;&thinsp;acquisitions, operations, strategy, finance. They just require a level of problem recognition that current models haven't reached.</p>
+
+    <p>The 113 solvable tasks aren't the easy half. Many of them are solved by a single model that happened to activate the right reasoning pattern while seven others missed it. The boundary between "solvable" and "unsolvable" is whether a given model's training happened to produce the specific recognition capability that task demands.</p>
+
+    <p class="pull-quote">Domain expertise is a not about measuring along a single axis. It's a surface with peaks and valleys, and every model has a different topography.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>What This Says About the Benchmark</h2>
+
+    <p>A natural question: does this divergence mean the benchmark is noisy, or the mandatory gate too strict? Three patterns in the data argue it's neither.</p>
+
+    <p><strong>Models pass different tasks, not random subsets.</strong> If the gate were introducing noise&thinsp;&mdash;&thinsp;randomly failing models on tasks they should pass&thinsp;&mdash;&thinsp;you'd expect high overlap between top models. They'd all be "rolling the same dice." Instead, the Jaccard similarity between the top two models is 31.7%. Each model has a consistent, distinct pattern of what it recognizes. That's signal, not noise.</p>
+
+    <p><strong>44 tasks are solved by exactly one model.</strong> If the gate were arbitrary, a task passable by one model should be passable by others with similar capability. Instead, specific models have specific recognition capabilities that others lack entirely. Opus solves kw_030 (the La Liga tiebreaker insight) while GPT doesn't. GPT solves kw_042 while Opus doesn't (DCF). These aren't random coin flips&thinsp;&mdash;&thinsp;they reflect genuinely different reasoning patterns.</p>
+
+    <p><strong>When two models both pass, their quality is identical.</strong> On the 26 tasks both Opus and GPT pass, their average scores are 0.816 and 0.819. Nearly indistinguishable. This means the gate is measuring a real binary&thinsp;&mdash;&thinsp;either you recognized the problem or you didn't. Once you do, you produce good work. If the gate were too strict, you'd see quality variance among passing results. You don't.</p>
+
+    <div class="callout">
+      <p><strong>The gate is strict because the thing it tests is genuinely binary.</strong> A doctor either catches the contraindication or doesn't. An analyst either decodes the offer as a signal or evaluates it at face value. There's no "partial credit" version of problem recognition. The divergence between models is not explained by harsh scoring&thinsp;&mdash;&thinsp;it's an early evidence that domain expertise is a jagged capability, and current models are developing it in genuinely different directions.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2>How Close They Get</h2>
+
+    <p>The zero scores obscure how close models often come. On many gated-out tasks, the model misses a <em>single</em> mandatory criterion while nailing everything else.</p>
+
+    <p><strong>Opus 4.6</strong> has 55 tasks where exactly one mandatory criterion failed. On those tasks, it averages 67% on good-to-have and 61% on ideal criteria. Some examples:</p>
+
+    <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Task</th><th class="r">Mandatory</th><th class="r">Good-to-have</th><th class="r">Ideal</th><th class="r">Score</th></tr></thead>
+      <tbody>
+        <tr><td>kw_009</td><td class="r">5/6</td><td class="r">6/6</td><td class="r">7/7</td><td class="r">0</td></tr>
+        <tr><td>kw_175</td><td class="r">4/5</td><td class="r">5/5</td><td class="r">5/5</td><td class="r">0</td></tr>
+        <tr><td>kw_064</td><td class="r">4/5</td><td class="r">4/4</td><td class="r">4/4</td><td class="r">0</td></tr>
+        <tr><td>kw_200</td><td class="r">4/5</td><td class="r">5/5</td><td class="r">4/5</td><td class="r">0</td></tr>
+        <tr><td>kw_031</td><td class="r">6/7</td><td class="r">5/6</td><td class="r">5/6</td><td class="r">0</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>kw_009: five out of six mandatory criteria, perfect on every good-to-have and ideal criterion. Score: zero. The model did outstanding work on everything except the one thing that defines whether the analysis is correct.</p>
+
+    <p><strong>GPT-5.4</strong> shows the same pattern: 77 near-miss tasks, averaging 62% on good-to-have when gated out by a single mandatory failure.</p>
+
+    <p>This is the sharpest illustration of jagged intelligence. The model isn't producing bad work. It's producing excellent work on the wrong problem. It extracts the right data, structures a thorough analysis, surfaces non-obvious details&thinsp;&mdash;&thinsp;and misses the one framing decision that an experienced practitioner would catch before reading past the first paragraph.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Honest Questions</h2>
+
+    <h3>"The benchmark is too adversarial?"</h3>
+
+    <p>Not every task in KWBench is adversarial. kw_029 is a straightforward commodities trading crisis&thinsp;&mdash;&thinsp;no hidden agendas, no counterparty games. The data is in the prompt, the answer follows from the facts. kw_099 is a writing task that follows a 12-step process. These aren't trick questions. They test whether a model can do the job described, nothing more. The benchmark includes these deliberately, because domain competence means getting the straightforward things right <em>and</em> catching the subtle ones.</p>
+
+    <h3>"Scores are low arbitrarily"</h3>
+
+    <p>Every model scores low. The best model scores 22.6%. The interesting question isn't whether a model scores well&thinsp;&mdash;&thinsp;none do&thinsp;&mdash;&thinsp;it's which specific tasks it passes and what that reveals about its reasoning patterns. A model that passes 30 different tasks from the top model is more interesting than one that passes the same 30. The benchmark's value is in the disaggregated signal, not the aggregate number.</p>
+
+    <h3>"You're just testing for a specific kind of thinking"</h3>
+
+    <p>Yes. We're testing for the kind of thinking that distinguishes a senior practitioner from a competent junior. The kind where you read the situation before you do the analysis. Where you ask "what kind of problem is this?" before you start solving it. <strong> Models are getting remarkably good at the solving part. The recognizing part is where they fall short, and that's what this benchmark measures. </strong></p>
+
+    <p>I will publish a deeper analysis of <em>why</em> models default to cooperative framing when the situation calls for adversarial reasoning. The pattern is consistent enough to be structural, not incidental. More on that soon.</p>
+
+    <h3>"Have you tested against a harness?"</h3>
+
+    <p>Not yet. All evaluations so far use the same setup&thinsp;&mdash;&thinsp;identical prompts, identical tool access, same judge. I haven't yet run systematic harness-level testing (varying system prompts, temperatures, retry strategies) to check how much scores shift with infrastructure choices. That's coming. I expect some variance, and I expect the core pattern&thinsp;&mdash;&thinsp;models solving different tasks, low overlap, jagged expertise&thinsp;&mdash;&thinsp;to hold.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Implementation</h2>
+
+    <p>Each rubric criterion is judged as a separate binary call&thinsp;&mdash;&thinsp;pass or fail, independently, one at a time. No holistic scoring, no sliding scales. Judge is instructed to give a pass when it considers the answer partial. The judge is <strong>Gemini 3 Flash</strong> with access to a code interpreter so it can verify computations against ground truth rather than guessing whether an answer "sounds right." Opus as a judge was too harsh in my testing</p>
+
+    <p>The eval harness is <a href="https://github.com/ankitmaloo/fasteval">fasteval</a>. It handles concurrent model calls, tool execution (search, code, bash), and parallel judging. A full run&thinsp;&mdash;&thinsp;223 tasks with tool use and judging&thinsp;&mdash;&thinsp;takes 20&ndash;30 minutes end to end depending on the model's response latency and rate limits.</p>
+
+    <p>All models get the same system prompt, the same tool configuration per task, and the same rubric. No model-specific tuning.</p>
+
+    <p> Models are evaluated via direct APIs for OpenAI, Anthropic, Gemini, and then used Nebius, Openrouter, Prime Intellect, and Alibaba Cloud for the open source models.</p>
+
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>KWBench&ensp;&middot;&ensp;<a href="index.html">Leaderboard</a>&ensp;&middot;&ensp;<a href="https://huggingface.co/datasets/clio-ai/kwbench">Dataset</a>&ensp;&middot;&ensp;<a href="https://github.com/ankitmaloo/fasteval">FastEval</a></p>
+  </div>
+</footer>
+
+<script>
+const html = document.documentElement;
+const toggle = document.getElementById('themeToggle');
+const label = document.getElementById('themeLabel');
+const icon = document.getElementById('themeIcon');
+const sunPath = 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-3a1 1 0 0 0 1-1V1a1 1 0 0 0-2 0v2a1 1 0 0 0 1 1zm0 16a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zm9-9h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0-2zM4 11H2a1 1 0 0 0 0 2h2a1 1 0 0 0 0-2zm14.07-5.66a1 1 0 0 0 .7-.29l1.42-1.42a1 1 0 1 0-1.42-1.42l-1.41 1.42a1 1 0 0 0 .71 1.71zM5.93 16.66a1 1 0 0 0-.7.29l-1.42 1.42a1 1 0 0 0 1.42 1.42l1.41-1.42a1 1 0 0 0-.71-1.71zm12.14 0a1 1 0 0 0-.71 1.71l1.41 1.42a1 1 0 0 0 1.42-1.42l-1.42-1.42a1 1 0 0 0-.7-.29zM5.93 7.34a1 1 0 0 0 .71-1.71L5.22 4.21a1 1 0 0 0-1.42 1.42l1.42 1.42a1 1 0 0 0 .71.29z';
+const moonPath = 'M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z';
+function setTheme(t) {
+  html.setAttribute('data-theme', t);
+  localStorage.setItem('kwbench-theme', t);
+  label.textContent = t === 'dark' ? 'Light' : 'Dark';
+  icon.innerHTML = '<path d="' + (t === 'dark' ? sunPath : moonPath) + '"/>';
+}
+const stored = localStorage.getItem('kwbench-theme');
+if (stored) setTheme(stored);
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+toggle.addEventListener('click', function() { setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+
+document.getElementById('topbar');
+window.addEventListener('scroll', function() { topbar.classList.toggle('scrolled', window.scrollY > 20); }, { passive: true });
+
+const observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.06 });
+document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+</script>
+
+</body>
+</html>

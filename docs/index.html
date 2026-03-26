@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KWBench — Knowledge Work Benchmark for LLMs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --c-bg: #FAF8F4;
+  --c-bg-warm: #F3F0E8;
+  --c-bg-code: #ECEADE;
+  --c-surface: #FFFFFF;
+  --c-border: #D8D4C8;
+  --c-border-light: #E8E4DA;
+  --c-text: #1A1814;
+  --c-text-secondary: #5C584E;
+  --c-text-tertiary: #8A867C;
+  --c-accent: #B44A2D;
+  --c-accent-bg: rgba(180,74,45,0.06);
+  --c-gate-red: #B44A2D;
+  --c-gate-amber: #C08520;
+  --c-gate-green: #3D7A4A;
+  --c-bar-track: #E8E4DA;
+  --c-bar-fill: #1A1814;
+  --c-highlight: rgba(180,74,45,0.08);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  --w: 720px;
+}
+
+[data-theme="dark"] {
+  --c-bg: #141210;
+  --c-bg-warm: #1C1A16;
+  --c-bg-code: #1E1C18;
+  --c-surface: #201E1A;
+  --c-border: #383428;
+  --c-border-light: #2C2A22;
+  --c-text: #E8E4DA;
+  --c-text-secondary: #A8A498;
+  --c-text-tertiary: #706C62;
+  --c-accent: #E07050;
+  --c-accent-bg: rgba(224,112,80,0.08);
+  --c-gate-red: #E07050;
+  --c-gate-amber: #D4A030;
+  --c-gate-green: #5CA86A;
+  --c-bar-track: #2C2A22;
+  --c-bar-fill: #E8E4DA;
+  --c-highlight: rgba(224,112,80,0.06);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.72;
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+::selection { background: var(--c-accent); color: #fff; }
+
+.container { max-width: var(--w); margin: 0 auto; padding: 0 28px; }
+
+/* ── Topbar ── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 14px 28px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--c-bg);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s, background 0.3s, backdrop-filter 0.3s;
+}
+.topbar.scrolled {
+  border-bottom-color: var(--c-border-light);
+  background: color-mix(in srgb, var(--c-bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+}
+.topbar-logo {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 600;
+  color: var(--c-text); text-decoration: none;
+}
+.theme-toggle {
+  appearance: none; border: none;
+  background: var(--c-bg-warm);
+  border-radius: 20px; padding: 5px 13px;
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
+  color: var(--c-text-secondary); cursor: pointer;
+  transition: background 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.theme-toggle:hover { background: var(--c-border-light); color: var(--c-text); }
+.theme-toggle svg { width: 13px; height: 13px; fill: currentColor; }
+
+/* ── Typography ── */
+h1, h2, h3 { font-family: var(--font-display); color: var(--c-text); letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--c-border); }
+h3 { font-size: 1.1rem; font-weight: 600; margin: 32px 0 12px; }
+p { color: var(--c-text-secondary); margin-bottom: 16px; }
+p strong, li strong { color: var(--c-text); font-weight: 600; }
+em { font-style: italic; }
+a { color: var(--c-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--c-accent) 30%, transparent); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--c-accent); }
+ul { padding-left: 22px; margin-bottom: 16px; }
+li { color: var(--c-text-secondary); margin-bottom: 8px; }
+li::marker { color: var(--c-text-tertiary); }
+
+/* ── Hero ── */
+.hero { padding: 130px 0 56px; }
+.hero h1 {
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 700; line-height: 1.12;
+  margin-bottom: 24px; letter-spacing: -0.03em;
+}
+.hero h1 .kw { font-style: italic; color: var(--c-accent); }
+.hero .lead {
+  font-size: 1.12rem; line-height: 1.75;
+  color: var(--c-text-secondary); max-width: 600px;
+}
+.hero .lead em { color: var(--c-text); }
+
+/* ── Section ── */
+section { padding: 56px 0; }
+section + section { border-top: 1px solid var(--c-border-light); }
+
+/* ── The big number strip ── */
+.numbers {
+  display: flex; gap: 0; margin: 32px 0 8px;
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; overflow: hidden;
+  background: var(--c-surface);
+}
+.numbers .n {
+  flex: 1; padding: 22px 20px;
+  border-right: 1px solid var(--c-border-light);
+  text-align: center;
+}
+.numbers .n:last-child { border-right: none; }
+.numbers .n-val {
+  font-family: var(--font-display);
+  font-size: 1.8rem; font-weight: 700;
+  color: var(--c-text); line-height: 1;
+}
+.numbers .n-label {
+  font-size: 0.78rem; color: var(--c-text-tertiary);
+  margin-top: 6px;
+}
+
+/* ── Leaderboard ── */
+.leaderboard-wrap {
+  margin: 20px 0;
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; overflow: hidden;
+  background: var(--c-surface);
+}
+.leaderboard {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.92rem; font-variant-numeric: tabular-nums;
+}
+.leaderboard thead th {
+  text-align: left; padding: 13px 18px;
+  font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--c-text-tertiary);
+  background: var(--c-bg-warm);
+  border-bottom: 1px solid var(--c-border-light);
+}
+.leaderboard thead th:nth-child(3),
+.leaderboard thead th:nth-child(4) { text-align: right; }
+.leaderboard tbody tr {
+  border-bottom: 1px solid var(--c-border-light);
+  transition: background 0.12s;
+}
+.leaderboard tbody tr:last-child { border-bottom: none; }
+.leaderboard tbody tr:hover { background: var(--c-highlight); }
+.leaderboard td { padding: 12px 18px; vertical-align: middle; }
+.lb-rank {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  font-weight: 500; color: var(--c-text-tertiary); width: 40px;
+}
+.lb-model { font-weight: 600; color: var(--c-text); }
+.lb-org { font-weight: 400; color: var(--c-text-tertiary); font-size: 0.85em; margin-left: 6px; }
+.lb-score-cell { text-align: right; width: 190px; }
+.lb-score-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.lb-bar { width: 90px; height: 5px; background: var(--c-bar-track); border-radius: 3px; overflow: hidden; }
+.lb-bar-fill { height: 100%; background: var(--c-bar-fill); border-radius: 3px; }
+.lb-score-num { font-family: var(--font-mono); font-weight: 500; font-size: 0.88rem; color: var(--c-text); min-width: 48px; text-align: right; }
+.lb-pass { text-align: right; font-size: 0.85rem; color: var(--c-text-tertiary); width: 90px; }
+
+/* ── Failure mode grid ── */
+.fm-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--c-border-light);
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; overflow: hidden; margin: 20px 0;
+}
+.fm-item { background: var(--c-surface); padding: 18px 20px; }
+.fm-name { font-family: var(--font-display); font-size: 0.93rem; font-weight: 600; color: var(--c-text); margin-bottom: 5px; }
+.fm-desc { font-size: 0.86rem; line-height: 1.55; color: var(--c-text-secondary); }
+
+/* ── Example cards ── */
+.example {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: 8px; padding: 22px 26px;
+  margin: 16px 0; position: relative;
+}
+.example::before {
+  content: attr(data-id);
+  position: absolute; top: 22px; right: 22px;
+  font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+  color: var(--c-text-tertiary); letter-spacing: 0.03em;
+}
+.example h4 {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 600;
+  color: var(--c-text); margin-bottom: 8px;
+}
+.example p { font-size: 0.92rem; line-height: 1.65; margin-bottom: 0; }
+.example p + p { margin-top: 8px; }
+
+/* ── Gate callout ── */
+.gate-callout {
+  background: var(--c-accent-bg);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 15%, transparent);
+  border-radius: 8px; padding: 24px 26px; margin: 24px 0;
+}
+.gate-callout p { color: var(--c-text-secondary); }
+.gate-callout p:last-child { margin-bottom: 0; }
+
+/* ── Code blocks ── */
+.code-block {
+  background: var(--c-bg-code);
+  border: 1px solid var(--c-border-light);
+  border-radius: 6px; padding: 18px 22px; margin: 18px 0;
+  font-family: var(--font-mono); font-size: 0.82rem;
+  line-height: 1.7; color: var(--c-text-secondary);
+  overflow-x: auto; white-space: pre;
+}
+.code-block .kw { color: var(--c-accent); font-weight: 500; }
+.code-block .cm { color: var(--c-text-tertiary); }
+.code-block .num { color: var(--c-gate-amber); }
+
+/* ── Scoring bar ── */
+.scoring-bar {
+  display: flex; margin: 20px 0 14px;
+  border-radius: 6px; overflow: hidden;
+  height: 36px; max-width: 500px;
+  border: 1px solid var(--c-border-light);
+}
+.scoring-seg {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 600;
+}
+.scoring-seg.mandatory { flex: 0 0 40%; background: var(--c-gate-red); color: #fff; }
+.scoring-seg.good { flex: 0 0 35%; background: var(--c-gate-amber); color: #fff; }
+.scoring-seg.ideal { flex: 0 0 25%; background: var(--c-gate-green); color: #fff; }
+
+/* (removed collapsibles) */
+
+/* ── Pull quote ── */
+.pull-quote {
+  font-family: var(--font-display);
+  font-size: 1.2rem; font-weight: 400; font-style: italic;
+  line-height: 1.65; color: var(--c-text);
+  padding: 20px 0 20px 24px; margin: 24px 0;
+  border-left: 3px solid var(--c-accent);
+}
+
+/* ── Footer ── */
+footer {
+  padding: 44px 0; border-top: 1px solid var(--c-border-light);
+  text-align: center; font-size: 0.86rem; color: var(--c-text-tertiary);
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  body { font-size: 16px; }
+  .hero { padding: 110px 0 44px; }
+  .hero h1 { font-size: 2rem; }
+  .fm-grid { grid-template-columns: 1fr; }
+  .numbers { flex-wrap: wrap; }
+  .numbers .n { flex: 1 1 50%; }
+  .leaderboard { font-size: 0.84rem; }
+  .leaderboard td, .leaderboard th { padding: 10px 12px; }
+  .lb-bar { width: 50px; }
+  .lb-score-cell { width: 140px; }
+  .lb-pass { width: 70px; }
+  .example::before { display: none; }
+}
+
+/* ── Reveal ── */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.45s ease, transform 0.45s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav class="topbar" id="topbar">
+  <a href="#" class="topbar-logo">KWBench</a>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <svg id="themeIcon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+    <span id="themeLabel">Dark</span>
+  </button>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     LAYER 1: 10 seconds — what is this, why care
+     ════════════════════════════════════════════ -->
+
+<header class="hero">
+  <div class="container">
+    <h1><span class="kw">Knowledge Work</span><br>Benchmark</h1>
+    <p class="lead">We keep building benchmarks that test what LLMs are already good at. Math, code, factual recall, instruction following. Models ace those. Meanwhile, the thing that actually makes someone good at their job goes unmeasured.</p>
+    <p class="lead">Domain experts know things intuitively that outsiders don't. That is, which clause in the contract kills the deal. Which offer is really a signal about the buyer's desperation. Which incentive structure is going to get gamed by the third quarter. They recognize it from the situation. There is no prompt specifying "this is a signaling game." LLMs produce text that <em>sounds</em> like this expertise. KWBench measures whether it actually <em>is</em>.</p>
+  </div>
+</header>
+
+<main>
+<div class="container">
+
+  <section class="reveal">
+    <div class="numbers">
+      <div class="n"><div class="n-val">223</div><div class="n-label">tasks</div></div>
+      <div class="n"><div class="n-val">32</div><div class="n-label">domains</div></div>
+      <div class="n"><div class="n-val">22.6%</div><div class="n-label">best score</div></div>
+      <div class="n"><div class="n-val">~72%</div><div class="n-label">tasks gated out</div></div>
+    </div>
+    <p style="font-size:0.88rem; color:var(--c-text-tertiary); margin-top:10px;">The best model passes the domain-expertise gate on roughly 1 in 4 tasks. Most score zero.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════
+     LAYER 2: 1 minute — the leaderboard
+     ════════════════════════════════════════════ -->
+
+  <section class="reveal">
+    <h2>Leaderboard</h2>
+    <p><strong>Score</strong> is the mean across all tasks. <strong>Pass rate</strong> is the fraction where the model cleared the mandatory gate and got a non-zero score. <strong>These are different because passing models score between 40%&ndash;100% on individual tasks, not a flat 100%.</strong> HF Repo has the details. All models evaluated on the same tasks, identical rubrics, with tool access (search, code, bash) configured per-task.</p>
+
+    <div class="leaderboard-wrap">
+    <table class="leaderboard">
+      <thead><tr><th>#</th><th>Model</th><th style="text-align:right">Score</th><th style="text-align:right">Pass Rate</th></tr></thead>
+      <tbody>
+        <tr><td class="lb-rank">01</td><td><span class="lb-model">Claude Opus 4.6</span><span class="lb-org">Anthropic</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:100%"></div></div><span class="lb-score-num">22.6%</span></div></td><td class="lb-pass">61 / 219</td></tr>
+        <tr><td class="lb-rank">02</td><td><span class="lb-model">GPT-5.4</span><span class="lb-org">OpenAI</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:78%"></div></div><span class="lb-score-num">17.7%</span></div></td><td class="lb-pass">47 / 223</td></tr>
+        <tr><td class="lb-rank">03</td><td><span class="lb-model">GLM-5 Turbo</span><span class="lb-org">Zhipu AI</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:73%"></div></div><span class="lb-score-num">16.6%</span></div></td><td class="lb-pass">45 / 221</td></tr>
+        <tr><td class="lb-rank">04</td><td><span class="lb-model">Qwen 3.5 Plus</span><span class="lb-org">Alibaba</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:54%"></div></div><span class="lb-score-num">12.1%</span></div></td><td class="lb-pass">33 / 222</td></tr>
+        <tr><td class="lb-rank">05</td><td><span class="lb-model">Gemini 3.1 Pro</span><span class="lb-org">Google</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:53%"></div></div><span class="lb-score-num">12.0%</span></div></td><td class="lb-pass">35 / 223</td></tr>
+        <tr><td class="lb-rank">06</td><td><span class="lb-model">Kimi K2.5</span><span class="lb-org">Moonshot AI</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:50%"></div></div><span class="lb-score-num">11.3%</span></div></td><td class="lb-pass">32 / 223</td></tr>
+        <tr><td class="lb-rank">07</td><td><span class="lb-model">Qwen 3.5</span><span class="lb-org">Alibaba</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:50%"></div></div><span class="lb-score-num">11.3%</span></div></td><td class="lb-pass">31 / 222</td></tr>
+        <tr><td class="lb-rank">08</td><td><span class="lb-model">MiniMax M2.7</span><span class="lb-org">MiniMax</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:49%"></div></div><span class="lb-score-num">11.1%</span></div></td><td class="lb-pass">31 / 223</td></tr>
+        <tr><td class="lb-rank">09</td><td><span class="lb-model">Gemini 3 Flash</span><span class="lb-org">Google</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:47%"></div></div><span class="lb-score-num">10.7%</span></div></td><td class="lb-pass">30 / 223</td></tr>
+        <tr><td class="lb-rank">10</td><td><span class="lb-model">GPT-5.4 xHigh</span><span class="lb-org">OpenAI</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:42%"></div></div><span class="lb-score-num">9.5%</span></div></td><td class="lb-pass">28 / 218</td></tr>
+        <tr><td class="lb-rank">11</td><td><span class="lb-model">MiniMax M2.5</span><span class="lb-org">MiniMax</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:37%"></div></div><span class="lb-score-num">8.4%</span></div></td><td class="lb-pass">26 / 220</td></tr>
+        <tr><td class="lb-rank">12</td><td><span class="lb-model">GPT-OSS 120B</span><span class="lb-org">OpenAI</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:36%"></div></div><span class="lb-score-num">8.1%</span></div></td><td class="lb-pass">24 / 197</td></tr>
+        <tr><td class="lb-rank">13</td><td><span class="lb-model">Nemotron 3 Super</span><span class="lb-org">NVIDIA</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:23%"></div></div><span class="lb-score-num">5.2%</span></div></td><td class="lb-pass">15 / 223</td></tr>
+        <tr><td class="lb-rank">14</td><td><span class="lb-model">INTELLECT-3</span><span class="lb-org">Prime Intellect</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:17%"></div></div><span class="lb-score-num">3.8%</span></div></td><td class="lb-pass">12 / 223</td></tr>
+        <tr><td class="lb-rank">15</td><td><span class="lb-model">MiMo v2 Pro</span><span class="lb-org">Xiaomi</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:16%"></div></div><span class="lb-score-num">3.6%</span></div></td><td class="lb-pass">11 / 223</td></tr>
+        <tr><td class="lb-rank">16</td><td><span class="lb-model">MiMo v2 Omni</span><span class="lb-org">Xiaomi</span></td><td class="lb-score-cell"><div class="lb-score-wrap"><div class="lb-bar"><div class="lb-bar-fill" style="width:12%"></div></div><span class="lb-score-num">2.6%</span></div></td><td class="lb-pass">8 / 223</td></tr>
+
+      </tbody>
+    </table>
+    </div>
+
+    <p style="font-size:0.78rem; color:var(--c-text-tertiary); margin-top:8px;">*Tasks that errored out after 3 retries are excluded from scoring.</p>
+
+    <p>For a deeper look at how each model behaves across categories, where they succeed and where they consistently fail, see the <a href="insights.html"> Insights</a> page.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════
+     LAYER 3: 3 minutes — what it measures, how
+     ════════════════════════════════════════════ -->
+
+  <section class="reveal">
+    <h2>Why This Exists</h2>
+
+    <p>Knowledge workers operate in a world full of other people who are also optimizing&thinsp;&mdash;&thinsp;and who haven't told you what they're optimizing for. That's <a href="https://www.latent.space/p/adversarial-reasoning">adversarial reasoning</a> &thinsp;and that's the job. The acquisition offer has a 48-hour deadline because the buyer wants to prevent price discovery. The sales rep skips data entry because accurate handoffs reduce their commission leverage. The short seller publishes a report timed to maximise panic selling. Every scenario has people with hidden agendas, and the skill is reading through to what's actually going on.</p>
+
+    <p>Today's models are good at information retrieval and reasoning over structured inputs. CEOs and operators already expect that to work&thinsp;&ndash;&thinsp;it's table stakes. In the hands of experts who know what to ask for and how to verify, models thrive. For everyone else, they get the basics done. As we push toward autonomous agents that people rely on as domain experts, agents that make recommendations, draft strategies, evaluate deals etc. have a different bar. Those agents need to recognize when someone is gaming an incentive structure, when an offer is a signal rather than a price, when the consensus explanation is a red herring. They need to survive in the real world, where nobody labels the problem type for you.</p>
+
+    <p><strong>That's the scale KWBench aims for: how much can you trust an agent to do knowledge work without an expert looking over its shoulder?</strong></p>
+
+    <p> Once you know you're looking at a principal-agent problem, the solution follows naturally. Once you realize the acquisition offer is a signal and not a price, the analysis writes itself. The question is whether the model gets there on its own. <strong>Problem recognition is the hard part.</strong></p>
+
+    <p>KWBench measures that: can the model recognize which framework applies from the raw situation alone? Right now, mostly no.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Adversarial Reasoning</h2>
+
+    <p>In game theory, adversarial reasoning is the capacity to model other agents' incentives, strategies, and information sets and adjust your own strategy in response. It differs from analytical reasoning in one critical way: <strong>the problem environment contains other optimizing agents whose actions are hidden from you.</strong></p>
+
+    <p>Formally, the tasks in this benchmark present incomplete information games where the model must:</p>
+
+    <ul>
+      <li><strong>Infer hidden payoff functions.</strong> The other party's actions reveal their private information. MegaCorp offering $100M with exclusivity is a move in a signaling game:the offer <em>is</em> the signal. A rational agent doesn't overpay, so the offer reveals their valuation exceeds the price. The model must perform Bayesian updating on observed actions.</li>
+      <li><strong>Identify mechanism design failures.</strong> Three interventions failed because they treated salespeople as compliant executors rather than rational utility-maximizers. The solution requires restructuring payoffs so the agent's dominant strategy aligns with the principal's objective. The model must recognize this without being told "this is a mechanism design problem."</li>
+      <li><strong>Reason about strategic interdependence.</strong> Eibar is a dominated player (relegated regardless), but their action changes the game structure for other players. Eliminating a dominated strategy changes the subgame. The tiebreaker method flips, which flips the equilibrium outcome. Modeled from the real world incident. </li>
+      <li><strong>Detect coercive game structures.</strong> Artificial deadlines, exclusivity demands, and information asymmetry are moves designed to restrict the opponent's strategy space. The 48-hour deadline is a commitment device that prevents price discovery with the pretext of logistics.</li>
+    </ul>
+
+    <p>A useful test: does the model find the action that's optimal given what the other agents are optimizing for, or the action that would be optimal if the other agents were cooperative? Most model failures follow the same pattern: they solve every problem as single-player optimization, ignoring that the scenario contains other agents with conflicting objectives.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>What We Test</h2>
+
+    <p>Every task comes from a real-world scenario: acquisitions, labor disputes, sports scheduling, sales operations, market entry, regulatory compliance. Each one has the same property: the surface-level read leads to the wrong answer. Underneath is an incomplete information game with other agents, hidden payoff functions, and actions that are signals if you know how to read them. The model doesn't know it's playing a game. That's the point.</p>
+
+    <p>Six specific failure modes show up over and over:</p>
+
+    <div class="fm-grid">
+      <div class="fm-item">
+        <div class="fm-name">Forward simulation</div>
+        <div class="fm-desc">"If I do X, they'll do Y, then Z happens"&thinsp;&ndash;&thinsp;reasoning about reactive agents across multiple steps</div>
+      </div>
+      <div class="fm-item">
+        <div class="fm-name">Counterparty modeling</div>
+        <div class="fm-desc">"What are they actually optimizing for?"&thinsp;&mdash;&thinsp;inferring hidden payoff functions from observed actions</div>
+      </div>
+      <div class="fm-item">
+        <div class="fm-name">Equilibrium thinking</div>
+        <div class="fm-desc">"What happens when everyone knows everyone knows?"&thinsp;&mdash;&thinsp;finding stable states, where no player wants to deviate</div>
+      </div>
+      <div class="fm-item">
+        <div class="fm-name">Information asymmetry</div>
+        <div class="fm-desc">"What are they NOT telling me and why?"&thinsp;&mdash;&thinsp;reading strategic omissions as signal</div>
+      </div>
+      <div class="fm-item">
+        <div class="fm-name">Mechanism gaming</div>
+        <div class="fm-desc">"How will rational actors exploit these rules?"&thinsp;&mdash;&thinsp;stress-testing incentive designs</div>
+      </div>
+      <div class="fm-item">
+        <div class="fm-name">Signaling vs. cheap talk</div>
+        <div class="fm-desc">"Is this credible or just words?"&thinsp;&mdash;&thinsp;distinguishing costly signals from costless claims</div>
+      </div>
+    </div>
+
+    <p>The failure pattern is remarkably consistent: models solve every problem as if they're the only player. They evaluate the acquisition offer against standalone projections instead of asking what the offer <em>reveals</em>. They propose process improvements instead of incentive redesign. They produce the answer that would be correct if everyone else were neutral&thinsp;&ndash;&thinsp;which they never are.</p>
+
+    <p>The bulk of the benchmark is <strong>strategic reasoning</strong> (64 tasks) and <strong>organizational</strong> problems (44 tasks)&thinsp;&ndash;&thinsp;hidden agendas, principal-agent misalignments, coalitions forming behind the scenes. The rest spans adversarial prediction, operations, finance, research, consulting, science, healthcare, legal, and more. 223 tasks across 32 domains. Some are deliberately straightforward&thinsp;&ndash;&thinsp;one task just asks for an SEO article with three real YouTube videos embedded, and most models are not able to find the relevant videos. The range is intentional: domain competence means doing the simple things right <em>and</em> catching the subtle ones.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>How Scoring Works</h2>
+
+    <p>Every task has a rubric split into three tiers. Think of it like how a senior practitioner would actually review someone's work:</p>
+
+    <ul>
+      <li><strong>Mandatory</strong>&thinsp;&mdash;&thinsp;did you get the core thing right? The thing I'd check first. If you're evaluating an options trade and you missed IV crush, nothing else matters. If you're analyzing an acquisition and you didn't decode the offer as signal, I'm not reading further.</li>
+      <li><strong>Good-to-have</strong>&thinsp;&mdash;&thinsp;did you do thorough work? Sensitivity analysis, edge cases, realistic assumptions.</li>
+      <li><strong>Ideal</strong>&thinsp;&mdash;&thinsp;did you surface something I wouldn't have expected from a junior? Non-obvious insights, real practitioner-level depth.</li>
+    </ul>
+
+    <p>The key: <strong>if any mandatory criterion fails, the task scores zero.</strong> Full stop. Here's why that matters, and the exact formula:</p>
+
+    <div class="scoring-bar">
+      <div class="scoring-seg mandatory">Mandatory: 40%</div>
+      <div class="scoring-seg good">Good-to-have: 35%</div>
+      <div class="scoring-seg ideal">Ideal: 25%</div>
+    </div>
+
+    <div class="code-block"><span class="kw">def</span> score_rubric(mandatory, good_to_have, ideal):
+    <span class="kw">if not</span> all(mandatory):       <span class="cm"># any mandatory fail → 0</span>
+        <span class="kw">return</span> <span class="num">0.0</span>
+
+    score = <span class="num">0.40</span>                  <span class="cm"># base for passing all mandatory</span>
+    score += <span class="num">0.35</span> * (sum(good_to_have) / len(good_to_have))
+    score += <span class="num">0.25</span> * (sum(ideal) / len(ideal))
+    <span class="kw">return</span> score                  <span class="cm"># range: 0.40 – 1.0</span></div>
+
+    <p>Each criterion is judged independently as pass/fail by an LLM judge (Gemini) with access to a code interpreter. The judge can run the numbers against ground truth&thinsp;&mdash;&thinsp;verify a DCF, check a tiebreaker calculation, validate a commission structure&thinsp;&mdash;&thinsp;so answers that sound plausible but get the math wrong still fail.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Inside a Rubric</h2>
+
+    <p>Mandatory criteria split into two kinds. Some are gimmes:&thinsp;can the model extract the right numbers from the reference file, identify the parties involved, state the basic facts? Models are good at this. They use tools well, they parse spreadsheets, they pull data. That's table stakes, and we verify it, but it's the easy part.</p>
+
+    <p>The rest of the mandatory criteria test what the model <em>infers</em> from those facts. Not "did you mention the offer?" but "did you explain <em>why</em> the offer reveals the buyer's valuation?" Not "did you identify the audience?" but "did you explain why survivors are the primary audience&thinsp;&mdash;&thinsp;because they determine the company's future, they're the flight risk, not the departed employees?" The distinction is between observation and mechanism. Anyone can state a fact. A strong response explains the causal chain behind it, grounded in the specific data of the situation.</p>
+
+    <p>Good-to-have and ideal criteria layer on depth&thinsp;&ndash;&thinsp;did the model warn against unprompted sign-on bonuses (reveals discretionary budget), propose an incremental counter ($185&ndash;190K) instead of a single jump, identify adverse selection risk? These separate competent from excellent, but you have to pass all the mandatory criteria first or none of it counts.</p>
+
+    <p style="font-size:0.92rem; color:var(--c-text-tertiary); margin-top:20px;"><em>I'll detail the full rubric methodology&thinsp;&mdash;&thinsp;how criteria are calibrated, what makes a criterion hard vs. easy to game, and how we test for mechanism understanding rather than surface-level observation&thinsp;&mdash;&thinsp;in a future post.</em></p>
+
+    <h3>Deliberate misdirection</h3>
+
+    <p>Some tasks intentionally push the model toward the wrong answer, then test whether it recovers. Eg: a claims intake task presents everyone blaming the new software migration for doubled error rates. The software <em>is</em> a factor and that's the trap. It affects both shifts equally, so it can't explain why 70% of errors concentrate on the night shift. The model has to do a data join that nobody asked for, notice the staffing gap, and override the consensus explanation. Another task has the Content Director proposing to "optimize for AI Overviews"&thinsp;&mdash;&thinsp;the sophisticated version of the same trap the task is testing, where optimizing for Google means doing Google's content extraction work for free.</p>
+
+    <p>The benchmark deliberately includes tasks like this because in real world tasks, the obvious framing is often the wrong framing. The skill is noticing when to push back on the premise.</p>
+
+    <h3>Capability vs. reasoning</h3>
+
+    <p>Some task failures reflect capability gaps rather than reasoning failures, and it's important to distinguish them. The SEO task (kw_001) has search enabled and most models still can't fetch the relevant YouTube URLs and instead opt for generic ones. That is more on tool use or search ability than actual reasoning failure. Other tasks require computation the model can't do in a single generation.  Of the 223 tasks, 93 have at least one tool enabled (search, code, or bash). The other 130 give the model everything it needs in the prompt and reference files&thinsp;&mdash;&thinsp;the only thing being tested is whether it can think through the implications. I enabled models with access to a code execution environment for every task, and that improved the scores to what you see on the leaderboard.</p>
+  </section>
+
+<!-- ════════════════════════════════════════════
+     LAYER 4: depth — gate, design, dataset
+     ════════════════════════════════════════════ -->
+
+  <section class="reveal">
+    <h2>Why the Mandatory Gate</h2>
+
+    <p>A doctor who's right 80% of the time but misses critical contraindications is dangerous. An analyst who builds a beautiful model with the wrong discount rate produces actively harmful work. A lawyer who drafts a polished contract but misses the key clause creates liability.</p>
+
+    <div class="gate-callout">
+      <p><strong>Domain expertise is conjunctive, not additive.</strong> You have to get the critical things right. Getting everything else right doesn't compensate. That's the reality the gate encodes.</p>
+    </div>
+
+    <p>Here's what happens without it: models score 20%&ndash;35% higher. Because some critera are literally gimmes. The increase comes entirely from accumulating partial credit on the easy stuff&thinsp;&mdash;&thinsp;correct formatting, mentioning the right terms, hitting obvious criteria&thinsp;&mdash;&thinsp;while completely whiffing on the one or two things that actually test understanding. <strong>The gap between gated and ungated scores is basically a measure of how much a model's apparent competence is just fluency.</strong></p>
+
+    <p>A well-structured options analysis that misses IV crush will lose a trader money. A confident acquisition recommendation that doesn't decode the offer as signal leaves value on the table. Partial credit for these outputs rewards the prose while ignoring that the work product is wrong.</p>
+
+    <h3>Jagged intelligence</h3>
+
+    <p>The gate reveals something important about how models fail. On tasks where they miss a mandatory criterion and score zero, they still pass a large fraction of the good-to-have and ideal criteria. The best model (Opus 4.6) scores zero on 158 tasks&thinsp;&mdash;&thinsp;but on those same tasks, it gets 60% of the good-to-have criteria right. GPT-5.4 gets 55%. Even mid-tier models clear 40%&ndash;50%.</p>
+
+    <p>This is jagged intelligence. The model does thorough research, identifies relevant factors, structures its analysis well, sometimes even surfaces non-obvious details&thinsp;&mdash;&thinsp;and still misses the one thing that matters most. It produces work that <em>looks</em> expert-level but contains a fundamental error that a domain practitioner would catch immediately. Good-to-have criteria measure the quality of execution:&thinsp;did the model do diligent, thorough work? Mandatory criteria measure problem recognition:&thinsp;did the model understand what it was actually solving? Models are excellent workers who sometimes don't know what they're working on.</p>
+
+    <div class="leaderboard-wrap">
+    <table class="leaderboard">
+      <thead><tr><th>Model</th><th style="text-align:right">Score</th><th style="text-align:right">Tasks Gated Out</th><th style="text-align:right">G2H on Gated Tasks</th></tr></thead>
+      <tbody>
+        <tr><td><span class="lb-model">Claude Opus 4.6</span></td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">22.6%</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">158</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">60.2%</td></tr>
+        <tr><td><span class="lb-model">GPT-5.4</span></td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">17.7%</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">176</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">54.9%</td></tr>
+        <tr><td><span class="lb-model">Qwen 3.5 MOE</span></td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">11.3%</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">191</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">49.2%</td></tr>
+        <tr><td><span class="lb-model">Qwen 3.5 Plus</span></td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">12.1%</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">189</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">47.9%</td></tr>
+        <tr><td><span class="lb-model">Gemini 3 Flash</span></td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">10.7%</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">193</td><td style="text-align:right; font-family:var(--font-mono); font-size:0.88rem;">46.8%</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>On tasks where models score zero, they still pass roughly half the good-to-have criteria. The work is diligent. The analysis is structured. The data is extracted correctly. But the core insight&thinsp;&mdash;&thinsp;the thing that makes it the right analysis for this specific situation&thinsp;&mdash;&thinsp;is missing. It becomes a measure of execution quality, not understanding.</p>
+  </section>
+
+  <section class="reveal">
+    <h2>Task Design</h2>
+
+    <p>The philosophy is simple: <strong>don't instruct, measure.</strong> Every task is presented cold. No hints about what kind of problem it is. No sub-questions walking you through the answer. No vocabulary telegraphing the framework.</p>
+
+    <p>This is a deliberate choice and worth explaining. Most KWBench tasks embed a second-order insight that separates good answers from default ones. The model must notice something non-obvious in the data, reason through its implications unprompted, and arrive at a conclusion that contradicts the surface-level read. The moment you add "consider what the offer reveals about the other party's position" to the system prompt, you've handed the model the recognition step. The score measures whether it can execute a framework it's been pointed at, and execution is easy.</p>
+
+    <p>Hinting also conflates training and evaluation. Training exposes the model to game-theoretic concepts, mechanism design, signaling games&thinsp;&mdash;&thinsp;it builds the capability. Evaluation should present the problem cold and measure whether the model activates the right reasoning pattern from the data alone. System instructions that hint at solution patterns mix these two stages together. The recommended system prompt is minimal and neutral: <em>"You are completing a task. Be thorough and specific."</em></p>
+
+    <p>A domain expert sees incentive misalignment in the situation. They don't need someone to label it. The model should work the same way.</p>
+
+    <h3>Where the tasks come from</h3>
+
+    <p>Acquisitions, labor disputes, sports scheduling, sales operations, market entry, regulatory compliance, clinical trials, contract negotiations. Each task is drawn from a real-world scenario where the surface-level read may lead to the wrong answer. Underneath is an incomplete information game&thinsp;&mdash;&thinsp;agents with hidden payoff functions whose actions are signals if you know how to read them.</p>
+
+    <p>Reference files are raw. CSVs, spreadsheets, memos, financial data. A buyer's stock price is down 15%. They're losing deals to a competitor. They have a stealth project. The data sits there. The model has to figure out what it means, just like you would.</p>
+
+    <p>Each task comes with the tools a human would reach for&thinsp;&mdash;&thinsp;web search, code execution, bash&thinsp;&mdash;&thinsp;configured per-task. Some need computation. Some need lookup. Most just need thinking.</p>
+
+    <h3>Concrete examples</h3>
+
+    <p>These are drawn from scenarios that actually happen, where the obvious answer is wrong in ways that matter.</p>
+
+    <div class="example" data-id="kw_030">
+      <h4>La Liga scheduling</h4>
+      <p>This one is based on a real situation from the 2020&ndash;21 La Liga season, where the league had to scramble at the last moment when someone realized a "dead" match was actually consequential. Eibar is relegated regardless of results. <strong>Default answer:</strong> exclude their match from simultaneous scheduling since it doesn't matter. <strong>The insight:</strong> Eibar winning creates a 3-way tie that changes the tiebreaker <em>method</em> from 2-way head-to-head (Huesca survives) to 3-way mini-league (Elche survives). A dead team's result flips who gets relegated between two living teams. Removing a dominated player changes the game structure for everyone else.</p>
+      <p> This has been my go to question for testing how well models can reason. The latest models get the tiebreaker right, but not the full insight. Previous iterations never did. First to get the schedule right was gemini-3-pro.</p>
+    </div>
+
+    <div class="example" data-id="kw_119">
+      <h4>Short seller attack</h4>
+      <p>Your stock is down 23% pre-market after a short seller published a report. Hindenburg, Muddy Waters, Citron have built careers on this playbook. <strong>Default answer:</strong> go point-by-point refuting the claims with facts and data. <strong>The insight:</strong> the short seller has already written their rebuttal to your defense. They <em>want</em> you to say X so they can release Document Y. Point-by-point refutation validates their framing and keeps the story alive&thinsp;&mdash;&thinsp;which is exactly how they make money. You attack motive and methodology, deploy capital (buyback signals confidence), and buy time with process. Every model we tested fell into the trap&thinsp;&mdash;&thinsp;they draft a detailed factual rebuttal, which is the one move the short seller is counting on.</p>
+    </div>
+
+    <div class="example" data-id="kw_109">
+      <h4>Salary negotiation</h4>
+      <p>You offered $180K to your top PM candidate. She claims another offer at $210K and needs you to match. Your max budget is $195K. Everyone has been on one side of this conversation. <strong>Default answer:</strong> explain your budget constraints honestly, offer $195K plus benefits, emphasize culture fit. <strong>The insight:</strong> her claim is cheap talk&thinsp;&mdash;&thinsp;unverifiable. Jumping to $195K immediately reveals your ceiling through concession size. Instead: probe her actual preferences ("what excites you about that opportunity?"), make moves that are costly to exploit if she's bluffing ("if that's the deciding factor, I understand if you need to take it"), and keep your maximum hidden. Almost every model jumps straight to the budget limit and tries to close the gap. They take the $210K at face value. That's exactly what a junior negotiator does.</p>
+    </div>
+
+    <div class="example" data-id="kw_172">
+      <h4>Acquisition offer</h4>
+      <p>A $100M unsolicited offer with a 48-hour deadline and 60-day exclusivity. Reference file: buyer's stock down 15%, losing deals to competitor, stealth project. <strong>Default answer:</strong> evaluate the offer against standalone projections. <strong>The insight:</strong> the offer <em>is</em> intelligence. A rational buyer doesn't overpay, so the offer reveals they think the target is worth significantly more than $100M. The deadline prevents price discovery. The exclusivity removes leverage. Every piece of deal structure is a move in a signaling game, and the model has to decode it as one.</p>
+    </div>
+
+    <div class="example" data-id="kw_221">
+      <h4>Sales handoff failure</h4>
+      <p>Three previous interventions failed: mandatory fields, commission holds, quality scores. Reference files include specific economics ($2,320 avg commission, $50&ndash;180 alternative entry costs). <strong>Default answer:</strong> simplify the form, hire coordinators, improve the process. <strong>The insight:</strong> accurate data entry isn't the selfish rational choice for reps. Three attempts at process fixes failed because it's a principal-agent problem. The only untried approach: restructure the payoffs so the agent's dominant strategy aligns with the principal's objective.</p>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2>Dataset</h2>
+
+    <p>The full dataset is on <a href="https://huggingface.co/datasets/clio-ai/kwbench">Hugging Face</a>. Every task ships with the domain expert's actual reasoning&thinsp;&ndash;&thinsp;the <strong>ground_truth</strong> field contains the answer an expert would give and why. That intuition we talked about earlier, written down explicitly. On top of that, structured metadata captures the shape of the expertise:</p>
+
+    <ul>
+      <li><strong>failure_analysis</strong>&thinsp;&mdash;&thinsp;what the default, lazy answer looks like and exactly where it goes wrong. This is how a senior person would describe what a junior got wrong.</li>
+      <li><strong>key_insight</strong>&thinsp;&mdash;&thinsp;the single non-obvious realization that separates a correct answer from a plausible-sounding wrong one.</li>
+      <li><strong>common_errors</strong>&thinsp;&mdash;&thinsp;the predictable failure patterns for each specific problem.</li>
+      <li><strong>model_must_recognize</strong>&thinsp;&mdash;&thinsp;the facts that have to be identified before any reasoning can begin.</li>
+      <li><strong>what_data_reveals</strong>&thinsp;&mdash;&thinsp;what the reference files actually tell you, if you know what to look for.</li>
+    </ul>
+
+    <p><strong>You can build your own rubrics from this.</strong> Care more about whether a model identifies the right framework than whether it produces a complete analysis? Build around <code>key_insight</code> and <code>model_must_recognize</code>. Want to measure how well models avoid common traps? Use <code>failure_analysis</code> and <code>common_errors</code>. The ground truth and metadata are the raw material. The provided rubrics are one way to use them.</p>
+
+    <div class="code-block"><span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
+
+ds = load_dataset(<span class="num">"clio-ai/kwbench"</span>)
+
+<span class="kw">for</span> task <span class="kw">in</span> ds[<span class="num">"test"</span>]:
+    print(task[<span class="num">"id"</span>], task[<span class="num">"category"</span>])
+    print(task[<span class="num">"ground_truth"</span>])      <span class="cm"># the domain expert's reasoning</span>
+    print(task[<span class="num">"metadata"</span>])          <span class="cm"># failure_analysis, key_insight, common_errors, ...</span>
+    print(task[<span class="num">"rubric"</span>])            <span class="cm"># mandatory / good_to_have / ideal</span>
+    print(task[<span class="num">"reference_files"</span>])   <span class="cm"># CSVs, memos, spreadsheets</span></div>
+  </section>
+
+  <section class="reveal">
+    <h2>Acknowledgments</h2>
+
+    <p>Thanks to the teams at Anthropic, Google DeepMind, Nebius, Prime Intellect, OpenRouter, and Qwen (Alibaba) for feedback on the tasks. This dataset wouldn't exist without the help we got along the way.</p>
+
+    <p>Special shoutout to every friend and colleague who got on a call to review tasks and push back on what "expert-level" actually means. You know who you are.</p>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>KWBench&ensp;&middot;&ensp;<a href="insights.html">Model Insights</a>&ensp;&middot;&ensp;<a href="https://huggingface.co/datasets/clio-ai/kwbench">Dataset</a>&ensp;&middot;&ensp;<a href="https://github.com/ankitmaloo/fasteval">FastEval</a></p>
+  </div>
+</footer>
+
+<script>
+const html = document.documentElement;
+const toggle = document.getElementById('themeToggle');
+const label = document.getElementById('themeLabel');
+const icon = document.getElementById('themeIcon');
+const sunPath = 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-3a1 1 0 0 0 1-1V1a1 1 0 0 0-2 0v2a1 1 0 0 0 1 1zm0 16a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zm9-9h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0-2zM4 11H2a1 1 0 0 0 0 2h2a1 1 0 0 0 0-2zm14.07-5.66a1 1 0 0 0 .7-.29l1.42-1.42a1 1 0 1 0-1.42-1.42l-1.41 1.42a1 1 0 0 0 .71 1.71zM5.93 16.66a1 1 0 0 0-.7.29l-1.42 1.42a1 1 0 0 0 1.42 1.42l1.41-1.42a1 1 0 0 0-.71-1.71zm12.14 0a1 1 0 0 0-.71 1.71l1.41 1.42a1 1 0 0 0 1.42-1.42l-1.42-1.42a1 1 0 0 0-.7-.29zM5.93 7.34a1 1 0 0 0 .71-1.71L5.22 4.21a1 1 0 0 0-1.42 1.42l1.42 1.42a1 1 0 0 0 .71.29z';
+const moonPath = 'M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z';
+function setTheme(t) {
+  html.setAttribute('data-theme', t);
+  localStorage.setItem('kwbench-theme', t);
+  label.textContent = t === 'dark' ? 'Light' : 'Dark';
+  icon.innerHTML = '<path d="' + (t === 'dark' ? sunPath : moonPath) + '"/>';
+}
+const stored = localStorage.getItem('kwbench-theme');
+if (stored) setTheme(stored);
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+toggle.addEventListener('click', function() { setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+
+document.getElementById('topbar');
+window.addEventListener('scroll', function() { topbar.classList.toggle('scrolled', window.scrollY > 20); }, { passive: true });
+
+const observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.06 });
+document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+</script>
+
+</body>
+</html>
